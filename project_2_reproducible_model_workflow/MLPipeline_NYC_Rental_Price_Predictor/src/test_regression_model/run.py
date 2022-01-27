@@ -5,6 +5,9 @@ Tags the best model with the "prod" tag to indicate the production model, and te
 import argparse
 import logging
 import wandb
+import mlflow
+import pandas as pd
+from sklearn.metrics import mean_absolute_error
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -12,45 +15,59 @@ logger = logging.getLogger()
 
 
 def go(args):
-
-    run = wandb.init(job_type="test_regression_model")
+    """
+    Test regression model procedure
+    """
+    run = wandb.init(job_type="test_model")
     run.config.update(args)
 
+    logger.info("Downloading artifacts")
     # Download input artifact. This will also log that this script is using this
     # particular version of the artifact
-    # artifact_local_path = run.use_artifact(args.input_artifact).file()
+    model_local_path = run.use_artifact(args.mlflow_model).download()
 
-    ######################
-    # YOUR CODE HERE     #
-    ######################
+    # Download test dataset
+    test_dataset_path = run.use_artifact(args.test_dataset).file()
+
+    # Read test dataset
+    x_test = pd.read_csv(test_dataset_path)
+    y_test = x_test.pop("price")
+
+    logger.info("Loading model and performing inference on test set")
+    sk_pipe = mlflow.sklearn.load_model(model_local_path)
+    y_pred = sk_pipe.predict(x_test)
+
+    logger.info("Scoring")
+    r_squared = sk_pipe.score(x_test, y_test)
+
+    mae = mean_absolute_error(y_test, y_pred)
+
+    logger.info("Score: %s", r_squared)
+    logger.info("MAE: %s", mae)
+
+    # Log MAE and r2
+    run.summary['r2'] = r_squared
+    run.summary['mae'] = mae
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="This step tests the production model against the test dataset")
-
+    parser = argparse.ArgumentParser(
+        description="Test the provided model against the test dataset")
 
     parser.add_argument(
-        "--parameter1", 
-        type=## INSERT TYPE HERE: str, float or int,
-        help=## INSERT DESCRIPTION HERE,
+        "--mlflow_model",
+        type=str,
+        help="Input MLFlow model",
         required=True
     )
 
     parser.add_argument(
-        "--parameter2", 
-        type=## INSERT TYPE HERE: str, float or int,
-        help=## INSERT DESCRIPTION HERE,
+        "--test_dataset",
+        type=str,
+        help="Test dataset",
         required=True
     )
-
-    parser.add_argument(
-        "--parameter3", 
-        type=## INSERT TYPE HERE: str, float or int,
-        help=## INSERT DESCRIPTION HERE,
-        required=True
-    )
-
 
     args = parser.parse_args()
 
