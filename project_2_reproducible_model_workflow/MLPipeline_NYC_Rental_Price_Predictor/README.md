@@ -564,6 +564,16 @@ Then commit your change, make a new release (for example ``1.0.1``) and retry (o
 ``-v 1.0.1`` when calling mlflow this time). Now the run should succeed and voit la', 
 you have trained your new model on the new data.
 
+### Results
+
+- Source Code for Release of ML Pipeline
+
+https://github.com/wink-thedeeplearner/nyc_rental_price_pipeline_release
+
+- To see the runs for building the end-end pipeline on wandb, refer to:
+
+https://wandb.ai/winkhai/ml_pipeline_nyc_airbnb/overview
+
 ## License
 
 [License](LICENSE.txt)
